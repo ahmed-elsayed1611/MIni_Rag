@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     FILE_ALLOWED_TYPES: List[str]
     FILE_MAX_SIZE: int
    
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(
+        env_file=str(Path(__file__).resolve().parents[1] / ".env")
+    )
 
 def get_settings():
     return Settings()

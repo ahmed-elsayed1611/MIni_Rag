@@ -1,4 +1,4 @@
-from helpers.config import get_settings , Setting
+from src.helpers.config import get_settings, Settings
 
 class BaseController:
     def __init__(self):
