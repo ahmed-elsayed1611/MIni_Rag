@@ -6,6 +6,7 @@ class settings(BaseSettings):
     OPENAI_API_KEY: str
     FILE_MAX_SIZE: int
     FILE_ALLOWED_TYPES: str
+    FILE_DEFUALT_CHUNCK_SIZE: int
 
  
     class Config:
