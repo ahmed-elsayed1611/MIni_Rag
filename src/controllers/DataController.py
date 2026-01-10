@@ -19,7 +19,7 @@ class DataController(BaseController):
             return False, ResponseStatus.FILE_TOO_LARGE.value
         return True, ResponseStatus.SUCCESS.value   
         
-    def generate_unique_filename(self, orig_file_name: str, project_id: str):
+    def generate_unique_filepath(self, orig_file_name: str, project_id: str):
         random_string = super().generate_unique_filename()
         project_controller = ProjectController()
         project_path = project_controller.get_project_path(project_id)
@@ -35,5 +35,5 @@ class DataController(BaseController):
             random_string = super().generate_unique_filename()
             unique_filename = f"{clean_name}_{random_string}"
         
-        # Return the full path
-        return os.path.join(project_path, unique_filename)
+        # Return both the full path and the unique filename (file_id)
+        return os.path.join(project_path, unique_filename), unique_filename

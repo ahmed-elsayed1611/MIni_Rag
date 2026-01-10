@@ -14,7 +14,7 @@ data_router = APIRouter(
     prefix = "/AI/data"
 )
 
-@data_router.post("/{project_id}")
+@data_router.post("/upload/{project_id}")
 async def get_data(project_id: str, file: UploadFile, app_settings: settings = Depends(get_settings)):
     is_valid, error_status = DataController().Validate_Uploaded_Files(file=file)
     if not is_valid:
@@ -22,7 +22,7 @@ async def get_data(project_id: str, file: UploadFile, app_settings: settings = D
     if is_valid:
         project_controller = ProjectController()
         project_dir_path = project_controller.get_project_path(project_id=project_id)
-        file_path = DataController().generate_unique_filename(file.filename, project_id)    
+        file_path,file_id = DataController().generate_unique_filepath(file.filename, project_id)    
         # Save the file chunk by chunk
         try:
             async with aiofiles.open(file_path ,'wb') as f :
@@ -30,14 +30,14 @@ async def get_data(project_id: str, file: UploadFile, app_settings: settings = D
                     await f.write(chunk)
         except Exception as e:
             logger.error(f"Error saving file: {e}")
-
+   
             print(f"Error saving file: {e}")
             raise HTTPException(status_code=500, detail="Failed to save file")
 
         return JSONResponse(
-            status_code=status.HTTP_200_OK,
             content={
-                'signal': ResponseStatus.SUCCESS.value
+                'signal': ResponseStatus.SUCCESS.value,
+                'file_id' : file_id
             }
         )
 
