@@ -29,11 +29,11 @@ class DataController(BaseController):
             return re.sub(r'[^a-zA-Z0-9.]', '_', orig_file_name)
         
         clean_name = get_clean_file_name(self, orig_file_name)
-        unique_filename = f"{clean_name}_{random_string}"
+        unique_filename = f"{random_string}_{clean_name}"
         
         while os.path.exists(os.path.join(project_path, unique_filename)):
             random_string = super().generate_unique_filename()
-            unique_filename = f"{clean_name}_{random_string}"
+            unique_filename = f"{random_string}_{clean_name}"
         
         # Return both the full path and the unique filename (file_id)
         return os.path.join(project_path, unique_filename), unique_filename
