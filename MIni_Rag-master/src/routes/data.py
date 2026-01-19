@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, HTTPException , status
+from fastapi import APIRouter, Depends, UploadFile, HTTPException , status ,Request
 from helpers import get_settings ,settings
 from controllers import DataController , ProjectController
 from controllers.ProcessController import ProcessController
@@ -8,7 +8,9 @@ import os
 import aiofiles
 import logging
 import json
-from routes.schemes.data import ProcessRequest
+from .schemes.data import ProcessRequest
+from models.ProjecModel import ProjectModel
+
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -18,7 +20,11 @@ data_router = APIRouter(
 )
 
 @data_router.post("/upload/{project_id}")
-async def get_data(project_id: str, file: UploadFile, app_settings: settings = Depends(get_settings)):
+async def get_data(request:Request,project_id: str, file: UploadFile, app_settings: settings = Depends(get_settings)):
+
+    project_model = ProjectModel(db_client=request.app.db)
+    project_obj = await project_model.get_project_or_create_one(project_id=project_id)
+
     is_valid, error_status = DataController().Validate_Uploaded_Files(file=file)
     if not is_valid:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"status": error_status})
@@ -38,7 +44,8 @@ async def get_data(project_id: str, file: UploadFile, app_settings: settings = D
         return JSONResponse(
             content={
                 'signal': ResponseStatus.SUCCESS.value,
-                'file_id' : file_id
+                'file_id' : file_id,
+                'project_id' :str(project_obj['_id'])
             }
         )
 

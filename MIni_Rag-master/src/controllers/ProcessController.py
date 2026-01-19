@@ -1,10 +1,10 @@
 import os
 from .BaseController import BaseController
-from controllers import ProjectController
+from .ProjectController import ProjectController
 from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import PyPDFLoader
 from models.Enums.ProcessEmuns import ProcessingEnums
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 class ProcessController(BaseController):

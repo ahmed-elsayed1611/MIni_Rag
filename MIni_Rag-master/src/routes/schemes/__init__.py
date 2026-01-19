@@ -1,1 +1,1 @@
-from routes.schemes.data import ProcessRequest
+from .data import ProcessRequest

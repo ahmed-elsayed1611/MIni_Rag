@@ -1,7 +1,7 @@
 services:
   mongodb:
     image: mongo:7-jammy
-    container_name: mongodb
+    container_name: mongodbAS
     ports:
       - "27017:27017"
     volumes:
@@ -15,4 +15,3 @@ networks:
 
 volumes:
   mongo_data:
-  
