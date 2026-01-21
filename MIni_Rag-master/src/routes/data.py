@@ -10,6 +10,8 @@ import logging
 import json
 from .schemes.data import ProcessRequest
 from models.ProjecModel import ProjectModel
+from models.db_schemes.data_chunck import data_chunck
+from models.ChunckModel import ChunckModel
 
 
 logger = logging.getLogger('uvicorn.error')
@@ -45,19 +47,30 @@ async def get_data(request:Request,project_id: str, file: UploadFile, app_settin
             content={
                 'signal': ResponseStatus.SUCCESS.value,
                 'file_id' : file_id,
-                'project_id' :str(project_obj['_id'])
             }
         )
 
 
     
 @data_router.post("/process/{project_id}")
-async def process_data(project_id: str, ProcessRequest: ProcessRequest, app_settings: settings = Depends(get_settings)):
+async def process_data(request:Request,project_id: str, ProcessRequest: ProcessRequest, app_settings: settings = Depends(get_settings)):
     
     file_id = ProcessRequest.file_id
     chunk_size = ProcessRequest.chunk_size
     overlap = ProcessRequest.overlap_size
+    do_reset = ProcessRequest.do_reset
+    
+    
 
+    project_model = ProjectModel(db_client=request.app.db)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+    
+    chunck_model = ChunckModel(db_client=request.app.db)
+    
+    # Reset functionality: delete existing chunks if do_reset == 1
+    if do_reset == 1:
+        deleted_count = await chunck_model.delete_chuncks_by_project_id(project_id=project['_id'])
+        logger.info(f"Reset: Deleted {deleted_count} existing chunks for project {project_id}")
     
     process_controller = ProcessController(project_id=project_id)
 
@@ -67,22 +80,23 @@ async def process_data(project_id: str, ProcessRequest: ProcessRequest, app_sett
                                                                 chunk_size=chunk_size, 
                                                                 chunk_overlap=overlap)
 
-
+    no_records = 0
     if file_chuncks is not None:
-        return JSONResponse(
-            content={
-                'signal': ResponseStatus.SUCCESS.value,
-                'file_id' : file_id,
-                'file_chuncks' : file_chuncks
-                }
+        file_chuncks_record = [
+            data_chunck (
+                chunck_text = chunc['page_content'],
+                chunck_meta_data = chunc['metadata'],
+                chunck_order = i+1,
+                chunck_project_id = project['_id']
             )
-    else:
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                'signal': ResponseStatus.ERROR.value,
-                'file_id' : file_id,
-                'error' : "Failed to process file"
+            for i , chunc in enumerate(file_chuncks)
+        ]
+        
+        no_records = await chunck_model.insert_many_chuncks(chuncks=file_chuncks_record)
+      
+    return JSONResponse(
+        content={
+            'signal': ResponseStatus.SUCCESS.value,
+            'no_records' : no_records
             }
         )
-            
