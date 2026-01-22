@@ -12,7 +12,9 @@ from .schemes.data import ProcessRequest
 from models.ProjecModel import ProjectModel
 from models.db_schemes.data_chunck import data_chunck
 from models.ChunckModel import ChunckModel
-
+from models.AssetModel import AssetModel
+from models.db_schemes.asset import Asset 
+from models.Enums.AssetTypeEnum import AssetTypeEnum
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -43,10 +45,25 @@ async def get_data(request:Request,project_id: str, file: UploadFile, app_settin
             logger.error(f"Error saving file: {e}")
             raise HTTPException(status_code=500, detail="Failed to save file")
 
+        # store the assets to the DB 
+        asset_model = await AssetModel.create_instance(db_client=request.app.db) 
+        asset_resource =  Asset(
+            asset_project_id = project_obj['_id'] if isinstance(project_obj, dict) else project_obj._id,
+            asset_type= AssetTypeEnum.FILE.value,
+            asset_name = file_id,
+            asset_size = os.path.getsize(file_path),
+           
+            
+        )
+
+        asset_record = await asset_model.create_asset(asset=asset_resource)
+
+
         return JSONResponse(
             content={
                 'signal': ResponseStatus.SUCCESS.value,
                 'file_id' : file_id,
+                'asset_id' : str(asset_record._id)
             }
         )
 
