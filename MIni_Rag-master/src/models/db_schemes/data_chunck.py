@@ -14,10 +14,16 @@ class data_chunck(BaseModel):
 
 
 
-    
-
-
-
+      
+    @classmethod
+    def get_indexes(cls):
+        return [
+            {
+                "key": [("chunck_project_id",1)],
+                "name": "chunck_project_id_index_1",
+                "unique": False
+            }
+        ]
 
 
 

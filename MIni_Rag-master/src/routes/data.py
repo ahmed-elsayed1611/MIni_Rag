@@ -24,7 +24,7 @@ data_router = APIRouter(
 @data_router.post("/upload/{project_id}")
 async def get_data(request:Request,project_id: str, file: UploadFile, app_settings: settings = Depends(get_settings)):
 
-    project_model = ProjectModel(db_client=request.app.db)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db)
     project_obj = await project_model.get_project_or_create_one(project_id=project_id)
 
     is_valid, error_status = DataController().Validate_Uploaded_Files(file=file)
@@ -62,10 +62,10 @@ async def process_data(request:Request,project_id: str, ProcessRequest: ProcessR
     
     
 
-    project_model = ProjectModel(db_client=request.app.db)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db)
     project = await project_model.get_project_or_create_one(project_id=project_id)
     
-    chunck_model = ChunckModel(db_client=request.app.db)
+    chunck_model =await ChunckModel.create_instance(db_client=request.app.db)
     
     # Reset functionality: delete existing chunks if do_reset == 1
     if do_reset == 1:
