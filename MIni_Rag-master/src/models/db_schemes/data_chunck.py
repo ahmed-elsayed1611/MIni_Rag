@@ -8,7 +8,7 @@ class data_chunck(BaseModel):
     chunck_meta_data : dict 
     chunck_order : int = Field(..., ge=1)
     chunck_project_id : ObjectId = Field(..., description="Project ID this chunk belongs to")
-
+    chunck_asset_id : ObjectId
     class Config:
         arbitrary_types_allowed = True  
 

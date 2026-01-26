@@ -48,12 +48,11 @@ async def get_data(request:Request,project_id: str, file: UploadFile, app_settin
         # store the assets to the DB 
         asset_model = await AssetModel.create_instance(db_client=request.app.db) 
         asset_resource =  Asset(
-            asset_project_id = project_obj['_id'] if isinstance(project_obj, dict) else project_obj._id,
+            asset_project_id = project_obj.id,
             asset_type= AssetTypeEnum.FILE.value,
             asset_name = file_id,
             asset_size = os.path.getsize(file_path),
-           
-            
+            asset_path = file_path
         )
 
         asset_record = await asset_model.create_asset(asset=asset_resource)
@@ -63,7 +62,7 @@ async def get_data(request:Request,project_id: str, file: UploadFile, app_settin
             content={
                 'signal': ResponseStatus.SUCCESS.value,
                 'file_id' : file_id,
-                'asset_id' : str(asset_record._id)
+                'asset_id' : str(asset_record.id)
             }
         )
 
@@ -72,7 +71,6 @@ async def get_data(request:Request,project_id: str, file: UploadFile, app_settin
 @data_router.post("/process/{project_id}")
 async def process_data(request:Request,project_id: str, ProcessRequest: ProcessRequest, app_settings: settings = Depends(get_settings)):
     
-    file_id = ProcessRequest.file_id
     chunk_size = ProcessRequest.chunk_size
     overlap = ProcessRequest.overlap_size
     do_reset = ProcessRequest.do_reset
@@ -82,38 +80,85 @@ async def process_data(request:Request,project_id: str, ProcessRequest: ProcessR
     project_model = await ProjectModel.create_instance(db_client=request.app.db)
     project = await project_model.get_project_or_create_one(project_id=project_id)
     
+    asset_model = await AssetModel.create_instance(db_client=request.app.db)
+
+    project_files_ids = {}
+    if ProcessRequest.file_id:
+        asset_record = await asset_model.get_asset_record(asset_project_id=project.id, asset_name=ProcessRequest.file_id)
+
+        if not asset_record:
+            return JSONResponse(
+                content={
+                    'signal': ResponseStatus.ERROR.value,
+                    'status': 'File not found'
+                }
+            )
+
+        project_files_ids = {asset_record.id: asset_record.asset_name}
+
+    else:
+       project_files = await asset_model.get_all_project_assets(
+        asset_project_id=project.id,
+        asset_type=AssetTypeEnum.FILE.value
+       )
+       project_files_ids = { record.id: record.asset_name for record in project_files}
+
+    if len(project_files_ids) == 0:
+       
+       return JSONResponse(
+           content={
+               'signal': ResponseStatus.ERROR.value,
+               'status': 'No files found for this project'
+           }
+       )
+       
     chunck_model =await ChunckModel.create_instance(db_client=request.app.db)
     
-    # Reset functionality: delete existing chunks if do_reset == 1
-    if do_reset == 1:
-        deleted_count = await chunck_model.delete_chuncks_by_project_id(project_id=project['_id'])
-        logger.info(f"Reset: Deleted {deleted_count} existing chunks for project {project_id}")
     
     process_controller = ProcessController(project_id=project_id)
 
-    file_content = process_controller.get_file_content(file_id=file_id)
-
-    file_chuncks = process_controller.process_file_content(file_content=file_content,
-                                                                chunk_size=chunk_size, 
-                                                                chunk_overlap=overlap)
-
     no_records = 0
-    if file_chuncks is not None:
-        file_chuncks_record = [
-            data_chunck (
-                chunck_text = chunc['page_content'],
-                chunck_meta_data = chunc['metadata'],
-                chunck_order = i+1,
-                chunck_project_id = project['_id']
-            )
-            for i , chunc in enumerate(file_chuncks)
-        ]
-        
-        no_records = await chunck_model.insert_many_chuncks(chuncks=file_chuncks_record)
+    no_files = 0
+
+    # Reset functionality: delete existing chunks if do_reset == 1
+    if do_reset == 1:
+        deleted_count = await chunck_model.delete_chuncks_by_project_id(project_id=project.id)
+        logger.info(f"Reset: Deleted {deleted_count} existing chunks for project {project_id}")
+    
+
+
+    for asset_id, file_id in project_files_ids.items():
+        file_content = process_controller.get_file_content(file_id=file_id)
+       
+        if file_content is None:
+            logger.warning(f"File {file_id} not found or could not be loaded")
+            continue
       
+        file_chuncks = process_controller.process_file_content(file_content=file_content,
+                                                                    chunk_size=chunk_size, 
+                                                                    chunk_overlap=overlap)
+
+        no_records = 0
+        if file_chuncks is not None:
+            file_chuncks_record = [
+                data_chunck (
+                    chunck_text = chunc['page_content'],
+                    chunck_meta_data = chunc['metadata'],
+                    chunck_order = i+1,
+                    chunck_project_id = project.id,
+                    chunck_asset_id = asset_id
+                )
+                for i , chunc in enumerate(file_chuncks)
+            ]
+            
+            no_records = await chunck_model.insert_many_chuncks(chuncks=file_chuncks_record)
+        
+        no_files += 1
+    
     return JSONResponse(
         content={
             'signal': ResponseStatus.SUCCESS.value,
-            'no_records' : no_records
+            'no_records' : no_records,
+            'proceesed_files' : no_files
             }
-        )
+    )

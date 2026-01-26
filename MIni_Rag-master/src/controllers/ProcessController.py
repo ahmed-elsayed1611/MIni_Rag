@@ -5,6 +5,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import PyPDFLoader
 from models.Enums.ProcessEmuns import ProcessingEnums
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+import os
 
 
 class ProcessController(BaseController):
@@ -24,9 +25,14 @@ class ProcessController(BaseController):
             return PyPDFLoader(os.path.join(self.project_path, file_id))
         else:
             raise ValueError(f"Unsupported file extension: {file_extension}")
+        
+        if not os.path.exists(file_path):
+            return None
     
     def get_file_content(self,file_id:str):
         loader = self.get_file_loader(file_id)
+        if loader is None:
+            return None
         return loader.load()
 
     def process_file_content(self,file_content: list, chunk_size: int = 100, chunk_overlap: int = 20):
