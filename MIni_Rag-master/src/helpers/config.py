@@ -1,6 +1,9 @@
-from pickle import NONE
 from pydantic_settings import BaseSettings 
 import os
+from typing import Optional
+
+_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+_ENV_FILE = os.path.join(_BASE_DIR, ".env")
 
 class settings(BaseSettings):
     APP_NAME: str
@@ -17,6 +20,8 @@ class settings(BaseSettings):
     EMBEDDING_BACKEND: str
     OPENAI_API_URL: str = ''
     COHERE_API_KEY: str = ''
+    GROQ_API_KEY: str = ''
+    GROQ_API_URL: str = ''
     
     GENERATION_MODEL_ID: str
     EMBEDDING_MODEL_ID: str
@@ -29,11 +34,11 @@ class settings(BaseSettings):
 
     VECTOR_DB_BACKEND: str
     VECTOR_DB_PATH: str
-    VECTOR_DB_DISTANCE_METHOD: str = None
-    
+    VECTOR_DB_DISTANCE_METHOD: Optional[str] = None
+     
  
     class Config:
-        env_file = ".env"
+        env_file = _ENV_FILE
       
 def get_settings():
     return settings()

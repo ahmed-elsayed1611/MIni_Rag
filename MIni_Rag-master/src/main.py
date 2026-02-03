@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from routes import base, data, nlp            # 
 from helpers.config import get_settings        # 
 from motor.motor_asyncio import AsyncIOMotorClient
-from stores.llm.provider.LLMProcviderFactory import LLMProviderFactory
-from stores.llm.LLMEnums import LLMEnums
-from stores.VectorDB.Providers.VectorDBProviderFactor import VectorDBProviderFactory
+from Stores.llm.provider.LLMProcviderFactory import LLMProviderFactory
+from Stores.llm.LLMEnums import LLMEnums
+from Stores.VectorDB.Providers.VectorDBProviderFactor import VectorDBProviderFactory
 
 
 app = FastAPI()
@@ -38,6 +38,7 @@ async def shutdown():
 
 app.router.on_startup.append(startup)
 app.router.on_shutdown.append(shutdown)
+
 app.include_router(base.base_router)
 app.include_router(data.data_router)
 app.include_router(nlp.nlp_router)
