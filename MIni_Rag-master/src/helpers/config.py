@@ -35,6 +35,11 @@ class settings(BaseSettings):
     VECTOR_DB_BACKEND: str
     VECTOR_DB_PATH: str
     VECTOR_DB_DISTANCE_METHOD: Optional[str] = None
+
+
+
+    DEFAULT_LANGUAGE: str = "en"
+    PRIMARY_LANGUAGE: str = "en"
      
  
     class Config:

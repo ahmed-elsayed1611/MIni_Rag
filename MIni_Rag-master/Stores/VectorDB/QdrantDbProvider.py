@@ -46,6 +46,42 @@ class QdrantDb(VectorDBInterface):
     def create_collection(self, collection_name: str, embedding_size: int, do_reset: bool = False):
         if do_reset:
             self.delete_collection(collection_name=collection_name)
+        if self.is_collection_existed(collection_name):
+            try:
+                existing = self.client.get_collection(collection_name)
+                existing_size = None
+                if hasattr(existing, "config") and hasattr(existing.config, "params") and hasattr(existing.config.params, "vectors"):
+                    vectors = existing.config.params.vectors
+                    if hasattr(vectors, "size"):
+                        existing_size = vectors.size
+                    elif hasattr(vectors, "__root__") and isinstance(vectors.__root__, dict):
+                        # Named vectors map
+                        try:
+                            first = next(iter(vectors.__root__.values()))
+                            if hasattr(first, "size"):
+                                existing_size = first.size
+                            elif isinstance(first, dict) and "size" in first:
+                                existing_size = first.get("size")
+                        except StopIteration:
+                            existing_size = None
+                    elif isinstance(vectors, dict):
+                        # Named vectors map
+                        try:
+                            first = next(iter(vectors.values()))
+                            if hasattr(first, "size"):
+                                existing_size = first.size
+                            elif isinstance(first, dict) and "size" in first:
+                                existing_size = first.get("size")
+                        except StopIteration:
+                            existing_size = None
+                if existing_size is not None and int(existing_size) != int(embedding_size):
+                    self.logger.info(
+                        f"Recreating collection {collection_name} due to embedding size change: {existing_size} -> {embedding_size}"
+                    )
+                    self.delete_collection(collection_name=collection_name)
+            except Exception as e:
+                self.logger.warning(f"Failed to validate existing collection size for {collection_name}: {e}")
+
         if not self.is_collection_existed(collection_name):
             self.client.create_collection(
                 collection_name=collection_name,

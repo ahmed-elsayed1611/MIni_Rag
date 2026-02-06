@@ -1,3 +1,15 @@
+import os
+import sys
+
+_SRC_DIR = os.path.dirname(__file__)
+_PROJECT_ROOT = os.path.abspath(os.path.join(_SRC_DIR, ".."))
+
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
 from fastapi import FastAPI
 from routes import base, data, nlp            # 
 from helpers.config import get_settings        # 
@@ -5,7 +17,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from Stores.llm.provider.LLMProcviderFactory import LLMProviderFactory
 from Stores.llm.LLMEnums import LLMEnums
 from Stores.VectorDB.Providers.VectorDBProviderFactor import VectorDBProviderFactory
-
+from Stores.llm.templates.template_parser import TemplateParser
 
 app = FastAPI()
 app.mongo = type('Mongo', (), {})()
@@ -30,6 +42,9 @@ async def startup():
     app.vector_db_client = vector_db_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
 
     app.vector_db_client.connect()
+
+    #template parser
+    app.template_parser = TemplateParser(language=settings.PRIMARY_LANGUAGE, default_language=settings.DEFAULT_LANGUAGE)
     
 async def shutdown():
     app.mongo.connection.close()

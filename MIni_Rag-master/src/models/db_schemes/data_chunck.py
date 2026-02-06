@@ -27,7 +27,9 @@ class data_chunck(BaseModel):
 
 
 
-
+class RetrivedChunk(BaseModel):
+    text: str
+    score: float
 
 
 

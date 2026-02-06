@@ -14,5 +14,7 @@ class ResponseStatus(Enum):
     VECTOR_DB_COLLECTION_RETRIVED = "vector_db_collection_retrived"
     VECTOR_DB_SEARCH_FAILED = "vector_db_search_failed"
     VECTORDB_SEARCH_SUCCESS = "vector_db_search_success"
+    RAG_ANSWER_ERROR = "rag_answer_error"
+    RAG_ANSWER_SUCCESS = "rag_answer_success"
 
 

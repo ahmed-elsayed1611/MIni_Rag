@@ -13,6 +13,7 @@ class CohereProvider(LLMinterface):
         self.default_input_max_characters = default_input_max_characters
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
         self.default_generation_temperature = default_generation_temperature
+        self.enums = CohereRoleEnums
 
     def set_generation_model(self, model_id: str):
         self.generation_model_id = model_id
@@ -50,6 +51,12 @@ class CohereProvider(LLMinterface):
         return response.text
 
     def embed_text(self, text: str,document_type: str = None):
+        vectors = self.embed_texts(texts=[text], document_type=document_type)
+        if not vectors or len(vectors) == 0:
+            return None
+        return vectors[0]
+
+    def embed_texts(self, texts: list, document_type: str = None):
         if not self.client:
             self.logger.error("Cohere client not initialized")
             return None
@@ -58,12 +65,13 @@ class CohereProvider(LLMinterface):
             self.logger.error("Embedding model not initialized")
             return None
 
-        input_type = DocumentTypeEnums.DOCUMENT.value
+        input_type = CohereRoleEnums.DOCUMENT.value
         if document_type == DocumentTypeEnums.QUERY.value:
-            input_type = DocumentTypeEnums.QUERY.value
+            input_type = CohereRoleEnums.QUERY.value
 
-        response = self.client.embed(texts=self.process_text(text), model=self.embedding_model_id, input_type=input_type,embedding_types=["float"])
+        processed_texts = [self.process_text(t) for t in texts]
+        response = self.client.embed(texts=processed_texts, model=self.embedding_model_id, input_type=input_type,embedding_types=["float"])
         if not response or not response.embeddings  or not response.embeddings.float:
             self.logger.error("Failed to generate embedding ")
             return None
-        return response.embeddings.float[0]
+        return response.embeddings.float

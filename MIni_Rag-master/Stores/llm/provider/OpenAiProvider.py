@@ -1,6 +1,8 @@
 from ..LLMinterface import LLMinterface
 from openai import OpenAI
 import logging
+import hashlib
+import random
 from ..LLMEnums import OpenAIRoleEnums 
 
 class OpenAiProvider(LLMinterface):
@@ -28,6 +30,8 @@ class OpenAiProvider(LLMinterface):
 
         self.client = OpenAI(api_key=self.api_key, base_url=base_url)
         self.logger = logging.getLogger(__name__)
+        self._logged_embedding_fallback_warning = False
+        self.enums = OpenAIRoleEnums
 
     def set_generation_model(self, model_id: str):
         self.generation_model_id = model_id
@@ -85,6 +89,12 @@ class OpenAiProvider(LLMinterface):
             return response.data[0].embedding
         except Exception as e:
             # Fallback for models that don't support embeddings (e.g., Groq chat models)
-            self.logger.warning(f"Embedding API failed ({e}), returning dummy vector of size {self.embedding_size}")
-            import random
-            return [random.uniform(-1.0, 1.0) for _ in range(self.embedding_size or 1536)]
+            if not self._logged_embedding_fallback_warning:
+                self.logger.warning(f"Embedding API failed ({e}), returning dummy vector of size {self.embedding_size}")
+                self._logged_embedding_fallback_warning = True
+
+            size = self.embedding_size or 1536
+            seed_material = f"{self.embedding_model_id}|{document_type or ''}|{text}".encode("utf-8", errors="ignore")
+            seed = int.from_bytes(hashlib.sha256(seed_material).digest()[:8], "big", signed=False)
+            rng = random.Random(seed)
+            return [rng.uniform(-1.0, 1.0) for _ in range(size)]
