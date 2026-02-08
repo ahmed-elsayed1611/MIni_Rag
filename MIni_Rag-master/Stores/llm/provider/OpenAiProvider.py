@@ -56,7 +56,7 @@ class OpenAiProvider(LLMinterface):
         max_tokens = max_output_tokens if max_output_tokens else self.default_generation_max_output_tokens
         temp = temperature if temperature else self.default_generation_temperature
 
-        chat_history.append(self.construct_prompt(prompt = 'prompt', role = OpenAIRoleEnums.USER.value))
+        chat_history.append(self.construct_prompt(prompt = prompt, role = OpenAIRoleEnums.USER.value))
 
         response = self.client.chat.completions.create(
             model=self.generation_model_id,

@@ -73,12 +73,12 @@ async def index_project(project_id: str, request: Request,push_request: PushRequ
                 }
             )
         inserted_items_count += len(page_chuncks)
-    return JSONResponse(
+    return JSONResponse({
+        "status": ResponseStatus.INSERT_INTO_VECTOR_DB_SUCCESS.value,
+        "message": f"Successfully inserted {inserted_items_count} items into vector database"
+    },
         status_code=status.HTTP_200_OK,
-        content={
-            "status": ResponseStatus.INSERT_INTO_VECTOR_DB_SUCCESS.value,
-            "message": f"Successfully inserted {inserted_items_count} items into vector database"
-        }
+        
     )
 
 
